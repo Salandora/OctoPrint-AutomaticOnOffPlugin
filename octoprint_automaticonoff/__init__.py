@@ -1,7 +1,7 @@
 ###############################
 ##
 ##
-## Based on foosel OctoPrint-PbPiLink Plugin
+## Based on foosel's OctoPrint-PbPiLink Plugin
 ## https://github.com/foosel/OctoPrint-PbPiLink
 ##
 ##
@@ -23,12 +23,12 @@ class State(object):
 	UNKNOWN = "unknown"
 
 class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
-                     octoprint.plugin.SettingsPlugin,
-                     octoprint.plugin.StartupPlugin,
-                     octoprint.plugin.ShutdownPlugin,
-                     octoprint.plugin.SimpleApiPlugin,
-                     octoprint.plugin.AssetPlugin,
-                     octoprint.plugin.EventHandlerPlugin):
+							octoprint.plugin.SettingsPlugin,
+							octoprint.plugin.StartupPlugin,
+							octoprint.plugin.ShutdownPlugin,
+							octoprint.plugin.SimpleApiPlugin,
+							octoprint.plugin.AssetPlugin,
+							octoprint.plugin.EventHandlerPlugin):
 
 	EVENTS_NOCLIENTS = (Events.CLIENT_OPENED, Events.CLIENT_CLOSED, Events.PRINT_DONE)
 	EVENTS_DISCONNECT = (Events.DISCONNECTED,)
@@ -39,23 +39,22 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 		self._client_poweroff_timer = None
 
 	##~~ Settings
-
 	def get_settings_defaults(self):
 		return dict(
-            power = dict(
-                on = dict(
-    			    startup=True,
-    			    clients=False,
-    			    connect=True,
-                ),
-                off = dict(
-                    shutdown=True,
-                    noclients=False,
-                    disconnect=True
-                )
-            ),
-            noclients_countdown=5,
-            api = ""
+			power = dict(
+				on = dict(
+					startup=True,
+					clients=False,
+					connect=True,
+				),
+				off = dict(
+					shutdown=True,
+					noclients=False,
+					disconnect=True
+				)
+			),
+			noclients_countdown=5,
+			api = ""
 		)
 
 	def initialize(self):
@@ -85,7 +84,6 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 		)
 
 	##~~ Assets
-
 	def get_assets(self):
 		return dict(
 			js=[
