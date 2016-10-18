@@ -13,6 +13,7 @@ from __future__ import absolute_import
 
 import octoprint.plugin
 import threading
+from flask import jsonify
 from octoprint.events import Events
 
 from octoprint_automaticonoff.api import SwitchOnOffApiPlugin
@@ -54,6 +55,7 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 				)
 			),
 			noclients_countdown=5,
+			reconnect_after_error=True,
 			api = ""
 		)
 
@@ -147,8 +149,6 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 		return True
 
 	def on_api_get(self, request):
-		from flask import jsonify
-
 		return jsonify(**self._status())
 
 	def get_api_commands(self):
@@ -159,8 +159,6 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 		)
 
 	def on_api_command(self, command, data):
-		from flask import jsonify
-
 		if command == "power_on":
 			self._poweron()
 
@@ -176,7 +174,6 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 		return dict(power=self._get_power())
 
 	##~~ EventHandlerPlugin
-
 	def on_event(self, event, payload):
 		if not event in self.__class__.EVENTS_NOCLIENTS and not event in self.__class__.EVENTS_DISCONNECT:
 			return
@@ -208,8 +205,9 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 		self._set_power(True)
 		if connect and self._connection_data is not None:
 			state, port, baudrate, printer_profile = self._connection_data
-			if state != "Operational":
+			if state != "Operational" and not (self._settings.get_boolean(["reconnect_after_error"]) and "Error" in state):
 				return
+			
 			self._printer.connect(port=port, baudrate=baudrate, printer_profile=printer_profile)
 
 	def _poweroff(self, disconnect=True):

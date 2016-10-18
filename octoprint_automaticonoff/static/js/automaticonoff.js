@@ -7,14 +7,6 @@ $(function() {
 
         self.powerState = ko.observable();
 
-        self.powerOn = function() {
-            self._sendCommand("power_on");
-        };
-
-        self.powerOff = function() {
-            self._sendCommand("power_off");
-        };
-
         self.powerButtonState = ko.computed(function() {
             if (self.powerState() == "on") {
                 return true;
@@ -28,13 +20,21 @@ $(function() {
         self.powerButtonEnabled = ko.computed(function() {
             return (self.powerState() == "on" || self.powerState() == "off");
         });
+        
+        self.powerOn = function() {
+            self._sendCommand("power_on");
+        };
+
+        self.powerOff = function() {
+            self._sendCommand("power_off");
+        };
 
         self.togglePower = function(sender, e) {
             if (!self.powerButtonEnabled()) return;
 
             if (self.powerState() == "on") {
                 if (self.printerState.isPrinting()) {
-                    showConfirmationDialog(gettext("This will power off your printer. Since you are currently printing, this will effectively cancel your print job."), powerOff);
+                    showConfirmationDialog(gettext("This will power off your printer. Since you are currently printing, this will effectively cancel your print job."), self.powerOff);
                 } else {
                     self.powerOff();
                 }

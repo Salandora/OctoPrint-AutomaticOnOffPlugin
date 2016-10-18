@@ -8,6 +8,13 @@
     <div class="control-group">
         <div class="controls">
             <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.settings.plugins.automaticonoff.reconnect_after_error"> {{ _('Reconnect to the printer after Error state and repowering') }}
+            </label>
+        </div>
+    </div>
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
                 <input type="checkbox" data-bind="checked: settings.settings.plugins.automaticonoff.power.on.startup"> {{ _('Automatically power on on start up of OctoPrint') }}
             </label>
         </div>
