@@ -230,17 +230,17 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 		self._poweroff()
 		self._sendMessage(jsonify(**self._status()))
 
-	def _set_power(self, enable):
+	def _set_power(self, power):
 		api = self.get_api()
 		if api is None:
 			return
 		
-		if enable:
+		if power:
 			self._logger.info("Enabling power supply")
 		else:
 			self._logger.info("Disabling power supply")
 			
-		api.set_power(enable)	
+		api.set_power(power)	
 	
 	def _get_power(self):
 		api = self.get_api()
