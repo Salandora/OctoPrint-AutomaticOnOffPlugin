@@ -1,19 +1,11 @@
 $(function() {
-    function PbPiLinkViewModel(parameters) {
+    function AutomaticOnOffViewModel(parameters) {
         var self = this;
 
         self.loginState = parameters[0];
         self.printerState = parameters[1];
 
         self.powerState = ko.observable();
-
-        self.powerOn = function() {
-            self._sendCommand("power_on");
-        };
-
-        self.powerOff = function() {
-            self._sendCommand("power_off");
-        };
 
         self.powerButtonState = ko.computed(function() {
             if (self.powerState() == "on") {
@@ -28,31 +20,42 @@ $(function() {
         self.powerButtonEnabled = ko.computed(function() {
             return (self.powerState() == "on" || self.powerState() == "off");
         });
+        
+        self.powerOn = function() {
+            self._sendCommand("power_on");
+        };
 
-        self.togglePower = function() {
+        self.powerOff = function() {
+            self._sendCommand("power_off");
+        };
+
+        self.togglePower = function(sender, e) {
             if (!self.powerButtonEnabled()) return;
 
             if (self.powerState() == "on") {
-                var powerOff = function() {
-                    self._sendCommand("power_off");
-                };
-
                 if (self.printerState.isPrinting()) {
-                    showConfirmationDialog(gettext("This will power off your printer. Since you are currently printing, this will effectively cancel your print job."), powerOff);
+                    showConfirmationDialog(gettext("This will power off your printer. Since you are currently printing, this will effectively cancel your print job."), self.powerOff);
                 } else {
-                    powerOff();
+                    self.powerOff();
                 }
             } else if (self.powerState() == "off") {
-                self._sendCommand("power_on");
+                self.powerOn();
             }
+        };
+        
+        self.onDataUpdaterPluginMessage = function(plugin, message) {
+            if (plugin != "automaticonoff")
+                return;
+                
+            self.fromResponse(message);
         };
 
         self.requestData = function() {
             $.ajax({
-                url: API_BASEURL + "plugin/pbpilink",
+                url: API_BASEURL + "plugin/automaticonoff",
                 type: "GET",
                 success: self.fromResponse
-            })
+            });
         };
 
         self.fromResponse = function(response) {
@@ -69,7 +72,7 @@ $(function() {
             if (!self.loginState.isAdmin()) return;
 
             $.ajax({
-                url: API_BASEURL + "plugin/pbpilink",
+                url: API_BASEURL + "plugin/automaticonoff",
                 type: "POST",
                 dataType: "json",
                 data: JSON.stringify({command: command}),
@@ -81,8 +84,8 @@ $(function() {
 
     // view model class, parameters for constructor, container to bind to
     ADDITIONAL_VIEWMODELS.push([
-        PbPiLinkViewModel,
+        AutomaticOnOffViewModel,
         ["loginStateViewModel", "printerStateViewModel"],
-        ["#navbar_plugin_pbpilink"]
+        ["#navbar_plugin_automaticonoff"]
     ]);
 });
