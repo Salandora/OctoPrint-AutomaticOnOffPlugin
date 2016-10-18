@@ -42,6 +42,13 @@ $(function() {
                 self.powerOn();
             }
         };
+        
+        self.onDataUpdaterPluginMessage = function(plugin, message) {
+            if (plugin != "automaticonoff")
+                return;
+                
+            self.fromResponse(message);
+        };
 
         self.requestData = function() {
             $.ajax({

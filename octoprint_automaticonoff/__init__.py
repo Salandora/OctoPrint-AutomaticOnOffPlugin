@@ -200,6 +200,8 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 				self._poweroff(disconnect=False)
 
 	##~~ Helpers
+	def _sendMessage(self, data=None):
+		self._plugin_manager.send_plugin_message(self._identifier, data)
 
 	def _poweron(self, connect=True):
 		self._set_power(True)
@@ -226,6 +228,7 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 
 		self._logger.info("Powering off after not seeing any clients after {}minute/s".format(self._settings.get_float(["noclients_countdown"])))
 		self._poweroff()
+		self._sendMessage(jsonify(**self._status()))
 
 	def _set_power(self, enable):
 		api = self.get_api()
