@@ -1,6 +1,7 @@
 # Automatic On/Off Plugin
+---
 
-This plugin relies on other API-Plugins which implement the methods to e.g. switch GPIOs, talk to a micro controller, do what ever is necessary to swith on the relay
+This plugin relies on other API-Plugins which implement the methods to e.g. switch GPIOs, talk to a micro controller, do what ever is necessary to switch on the relay
 
 ---
 
@@ -17,8 +18,11 @@ or manually using this URL:
 
 ## Actual API Plugins
 
-  Raspberry Pi: https://github.com/Salandora/OctoPrint-RaspberryPiApi
-                This one is especially for the Raspberry.
+  - Raspberry Pi:<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;https://github.com/Salandora/OctoPrint-RaspberryPiApi<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;This one is especially for the Raspberry.
 
-  Generic Command: https://github.com/Salandora/OctoPrint-CommandApi
-		   This one is a generic one, you'll need to provide it with some terminal command e.g. gpio mode ... or a shell script
+  - Generic Command:<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;https://github.com/Salandora/OctoPrint-CommandApi<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;This one is a generic one, you'll need to provide it with some terminal command 
+    &nbsp;&nbsp;&nbsp;&nbsp;e.g. gpio mode ... or a shell script
