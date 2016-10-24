@@ -18,11 +18,9 @@ or manually using this URL:
 
 ## Actual API Plugins
 
-  - Raspberry Pi:<br />
-    &nbsp;&nbsp;&nbsp;&nbsp;https://github.com/Salandora/OctoPrint-RaspberryPiApi<br />
-    &nbsp;&nbsp;&nbsp;&nbsp;This one is especially for the Raspberry.
+  - [Raspberry Pi:](https://github.com/Salandora/OctoPrint-RaspberryPiApi)<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;This one is especially for the Raspberry.<br />
 
-  - Generic Command:<br />
-    &nbsp;&nbsp;&nbsp;&nbsp;https://github.com/Salandora/OctoPrint-CommandApi<br />
-    &nbsp;&nbsp;&nbsp;&nbsp;This one is a generic one, you'll need to provide it with some terminal command 
-    &nbsp;&nbsp;&nbsp;&nbsp;e.g. gpio mode ... or a shell script
+  - [Command:](https://github.com/Salandora/OctoPrint-CommandApi)<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;This one is a generic one, you'll need to provide it with some terminal command<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;e.g. gpio mode ... or a shell script<br />
