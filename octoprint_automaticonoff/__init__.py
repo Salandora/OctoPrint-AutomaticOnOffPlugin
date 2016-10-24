@@ -17,6 +17,7 @@ from flask import jsonify
 from octoprint.events import Events
 
 from octoprint_automaticonoff.api import SwitchOnOffApiPlugin
+from time import sleep
 
 class State(object):
 	ON = "on",
@@ -32,7 +33,7 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 							octoprint.plugin.EventHandlerPlugin):
 
 	EVENTS_NOCLIENTS = (Events.CLIENT_OPENED, Events.CLIENT_CLOSED, Events.PRINT_DONE)
-	EVENTS_DISCONNECT = (Events.DISCONNECTED,)
+	EVENTS_DISCONNECT = (Events.DISCONNECTED)
 
 	def __init__(self):
 		self._connection_data = None
@@ -51,9 +52,11 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 				off = dict(
 					shutdown=True,
 					noclients=False,
-					disconnect=True
+					disconnect=True,
+					temperature=False,
 				)
 			),
+			temperature=40,
 			noclients_countdown=5,
 			reconnect_after_error=True,
 			api = ""
@@ -161,24 +164,24 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 	def on_api_command(self, command, data):
 		if command == "power_on":
 			self._poweron()
+			self._sendMessage(self._status())
 
 		elif command == "power_off":
 			self._poweroff()
+			self._sendMessage(self._status())
 			
 		elif command == "list_apis":
 			return jsonify(**dict(apis=self.get_apiplugins()))
-
-		return jsonify(**self._status())
 
 	def _status(self):
 		return dict(power=self._get_power())
 
 	##~~ EventHandlerPlugin
 	def on_event(self, event, payload):
-		if not event in self.__class__.EVENTS_NOCLIENTS and not event in self.__class__.EVENTS_DISCONNECT:
+		if not event in self.EVENTS_NOCLIENTS and not event in self.EVENTS_DISCONNECT:
 			return
 
-		if event in self.__class__.EVENTS_NOCLIENTS:
+		if event in self.EVENTS_NOCLIENTS:
 			if event == Events.CLIENT_OPENED:
 				if self._clients == 0 and self._settings.get_boolean(["power", "on", "clients"]):
 					self._poweron()
@@ -195,7 +198,7 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 				self._client_poweroff_timer.cancel()
 				self._client_poweroff_timer = None
 
-		elif event in self.__class__.EVENTS_DISCONNECT:
+		elif event in self.EVENTS_DISCONNECT:
 			if self._settings.get_boolean(["power", "off", "disconnect"]):
 				self._poweroff(disconnect=False)
 
@@ -219,6 +222,20 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 			
 		self._set_power(False)
 
+	def _wait_for_temperature(self):
+		# Make a test every second
+		while True:
+			temperature = self._printer.get_current_temperatures()
+
+			hottest = 0
+			for values in temperature.values():
+				hottest = values["actual"] if values["actual"] > hottest else hottest
+
+			if hottest < self._settings.get_float(["temperature"]):
+				return
+
+			sleep(1)
+
 	def _noclients_poweroff(self):
 		if self._printer.is_printing():
 			return
@@ -226,9 +243,14 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 		if not self._settings.get_boolean(["power", "off", "noclients"]):
 			return
 
+		if self._settings.get_boolean(["power", "off", "temperature"]):
+			self._wait_for_temperature()
+
 		self._logger.info("Powering off after not seeing any clients after {}minute/s".format(self._settings.get_float(["noclients_countdown"])))
+		if self._settings.get_boolean(["power", "off", "temperature"]):
+			self._logger.info("and temperature below {}C".format(self._settings.get_float(["temperature"])))
+
 		self._poweroff()
-		self._sendMessage(jsonify(**self._status()))
 
 	def _set_power(self, power):
 		api = self.get_api()
@@ -249,7 +271,7 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 		
 		return api.get_power()
 
-__plugin_name__ = "Automatic On/Off Plugin"
+__plugin_name__ = "Automatic On/Off"
 
 def __plugin_load__():
 	global __plugin_implementation__

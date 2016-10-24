@@ -77,7 +77,6 @@ $(function() {
                 dataType: "json",
                 data: JSON.stringify({command: command}),
                 contentType: "application/json; charset=UTF-8",
-                success: self.fromResponse
             });
         };
     }
