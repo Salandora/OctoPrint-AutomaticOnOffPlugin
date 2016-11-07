@@ -36,21 +36,40 @@
     <div class="control-group">
         <div class="controls">
             <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.settings.plugins.automaticonoff.power.off.idle"> {{ _('Automatically power off x minute/s after idle state') }}
+            </label>
+            <!-- ko if: settings.settings.plugins.automaticonoff.power.off.idle -->
+            <label class="checkbox">
+                x = <input type="number" class="input-mini text-right" step="any" min="0" data-bind="value: settings.settings.plugins.automaticonoff.idle.countdown">
+                <span class="add-on">m</span>
+            </label>
+            <!-- /ko -->
+        </div>
+    </div>
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
                 <input type="checkbox" data-bind="checked: settings.settings.plugins.automaticonoff.power.off.noclients"> {{ _('Automatically power off x minute/s after the last client disconnects when not printing') }}
             </label>
-            <label class="checkbox" data-bind="if: settings.settings.plugins.automaticonoff.power.off.noclients">
-                <label>
-                    x = <input type="number" class="input-mini text-right" step="any" min="0" data-bind="value: settings.settings.plugins.automaticonoff.noclients_countdown">
-                    <span class="add-on">m</span>
-                </label>
-                <label>
-                    <input type="checkbox" data-bind="checked: settings.settings.plugins.automaticonoff.power.off.temperature"> {{ _('Only power off if hotend temperature is below') }}
-                    <input type="number" class="input-mini text-right" step="any" min="0" data-bind="value: settings.settings.plugins.automaticonoff.temperature">
-                    <span class="add-on">°C</span>
-                </label>
+            <!-- ko if: settings.settings.plugins.automaticonoff.power.off.noclients -->
+            <label class="checkbox">
+                x = <input type="number" class="input-mini text-right" step="any" min="0" data-bind="value: settings.settings.plugins.automaticonoff.noclients_countdown">
+                <span class="add-on">m</span>
+            </label>
+            <!-- /ko -->
+        </div>
+    </div>
+    <!-- ko if: settings.settings.plugins.automaticonoff.power.off.noclients() || settings.settings.plugins.automaticonoff.power.off.idle() -->
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.settings.plugins.automaticonoff.power.off.temperature"> {{ _('Only power off if hotend temperature is below') }}
+                <input type="number" class="input-mini text-right" step="any" min="0" data-bind="value: settings.settings.plugins.automaticonoff.temperature">
+                <span class="add-on">°C</span>
             </label>
         </div>
     </div>
+    <!-- /ko -->
     <div class="control-group">
         <div class="controls">
             <label class="checkbox">
