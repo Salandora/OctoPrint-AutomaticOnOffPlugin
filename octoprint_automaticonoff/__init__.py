@@ -232,7 +232,8 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 			self._idle_poweroff_timer.start()
 
 	def on_sent(self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs):
-		if gcode and gcode in self.settings.get(["idle", "ignore_commands"]):
+		ignore_commands = [x.strip() for x in self.settings.get(["idle", "ignore_commands"]).split(',')]
+		if gcode and gcode in ignore_commands:
 			return
 		
 		if self._idle_poweroff_timer:

@@ -43,6 +43,10 @@
                 x = <input type="number" class="input-mini text-right" step="any" min="0" data-bind="value: settings.settings.plugins.automaticonoff.idle.countdown">
                 <span class="add-on">m</span>
             </label>
+            <label class="checkbox">
+                {{ _('Commands to Ignore:') }} <input type="text" class="input-mini text-right" step="any" min="0" data-bind="value: settings.settings.plugins.automaticonoff.idle.ignore_commands">
+                <span class="add-on">m</span>
+            </label>
             <!-- /ko -->
         </div>
     </div>
