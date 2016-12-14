@@ -41,7 +41,7 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 		self._connection_data = None
 		self._clients = 0
 		self._client_poweroff_timer = None
-		
+
 		self._idle_poweroff_timer = None
 
 	##~~ Settings
@@ -63,9 +63,10 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 			),
 			idle = dict(
 				countdown=5,
-				ignore_commands=["M105"]
+				ignore_commands="M105"
 			),
 			temperature=40,
+			autoconnect_delay = 5,
 			noclients_countdown=5,
 			reconnect_after_error=True,
 			api = ""
@@ -76,7 +77,12 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 			original_connect = self._printer.connect
 			def wrapped_connect(*args, **kwargs):
 				self._poweron(connect=False)
-				original_connect(*args, **kwargs)
+				if self._settings.get(["autoconnect_delay"]) > 0:
+					self._logger.info("autoconnect_delay %d", self._settings.get(["autoconnect_delay"]))
+					threading.Timer(self._settings.get(["autoconnect_delay"]), original_connect, args, kwargs).start()
+				else:
+					original_connect(*args, **kwargs)
+
 			self._printer.connect = wrapped_connect
 
 	##~~ Softwareupdate hook
@@ -110,22 +116,22 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 
 	def get_apiplugins(self):
 		result = []
-		
+
 		for name, plugin in self._plugin_manager.plugins.items():
 			if isinstance(plugin.implementation, SwitchOnOffApiPlugin):
 				result.append(dict(identifier = name, name=plugin.name))
-				
+
 		return result
 
 	def get_api(self):
 		api = self._settings.get(["api"])
 		if api is "":
 			return None
-		
+
 		plugin_info = self._plugin_manager.get_plugin_info(api)
 		if plugin_info is not None:
 			return plugin_info.implementation
-		
+
 		return None
 
 	def on_startup(self, host, port):
@@ -147,11 +153,11 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 	def on_shutdown(self):
 		if self._settings.get_boolean(["power", "off", "shutdown"]):
 			self._poweroff(False)
-			
+
 		api = self.get_api()
 		if api is None:
 			return
-		
+
 		api.on_shutdown()
 
 	##~~ SimpleAPI
@@ -176,7 +182,7 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 		elif command == "power_off":
 			self._poweroff()
 			self._sendMessage(self._status())
-			
+
 		elif command == "list_apis":
 			return jsonify(**dict(apis=self.get_apiplugins()))
 
@@ -187,10 +193,10 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 	def on_event(self, event, payload):
 		if not event in self.EVENTS_NOCLIENTS and not event in self.EVENTS_DISCONNECT and not event in self.EVENTS_POWER and not event in self.EVENTS_PRINT:
 			return
-		
+
 		if event in self.EVENTS_PRINT:
-			if event == Events.PRINT_START:
-				self._stop_idle_timer()
+			if event == Events.PRINT_STARTED:
+				self._stop_timers()
 			elif event == Events.PRINT_DONE:
 				self._start_idle_timer()
 
@@ -199,7 +205,6 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 				if self._clients == 0 and self._settings.get_boolean(["power", "on", "clients"]):
 					self._poweron()
 				self._clients += 1
-
 			elif event == Events.CLIENT_CLOSED:
 				self._clients -= 1
 
@@ -208,11 +213,12 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 				self._client_poweroff_timer = threading.Timer(self._settings.get_float(["noclients_countdown"]) * 60, self._noclients_poweroff)
 				self._client_poweroff_timer.start()
 			elif self._client_poweroff_timer is not None:
-				self._client_poweroff_timer.cancel()
-				self._client_poweroff_timer = None
+				self._stop_client_timer()
+
 		elif event in self.EVENTS_DISCONNECT:
 			if self._settings.get_boolean(["power", "off", "disconnect"]):
 				self._poweroff(disconnect=False)
+
 		elif event in self.EVENTS_POWER:
 			if event == Events.POWER_ON:
 				self._poweron()
@@ -222,20 +228,32 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 	def _stop_idle_timer(self):
 		if self._idle_poweroff_timer:
 			self._idle_poweroff_timer.cancel()
-			self._idle_poweroff_timer = None 
+			self._idle_poweroff_timer = None
+
+	def _stop_client_timer(self):
+		if self._client_poweroff_timer:
+			self._client_poweroff_timer.cancel()
+			self._client_poweroff_timer = None
+
+	def _stop_timers(self):
+		self._stop_idle_timer()
+		self._stop_client_timer()
 
 	def _start_idle_timer(self):
 		self._stop_idle_timer()
-		
+
 		if self._settings.get_boolean(["power", "off", "idle"]):
 			self._idle_poweroff_timer = threading.Timer(self._settings.get_float(["idle", "countdown"]) * 60, self._idle_poweroff)
 			self._idle_poweroff_timer.start()
 
 	def on_sent(self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs):
-		ignore_commands = [x.strip() for x in self.settings.get(["idle", "ignore_commands"]).split(',')]
-		if gcode and gcode in ignore_commands:
+		if self._settings.get(["idle", "ignore_commands"]) is None:
 			return
-		
+
+		ignore_commands = [x.strip() for x in self._settings.get(["idle", "ignore_commands"]).split(',')]
+		if gcode is None or gcode in ignore_commands:
+			return
+
 		if self._idle_poweroff_timer:
 			self._start_idle_timer()
 
@@ -246,20 +264,20 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 	def _poweron(self, connect=True):
 		self._set_power(True)
 		self._start_idle_timer()
-		
+
 		if connect and self._connection_data is not None:
 			state, port, baudrate, printer_profile = self._connection_data
 			if state != "Operational" and not (self._settings.get_boolean(["reconnect_after_error"]) and "Error" in state):
 				return
-			
+
 			self._printer.connect(port=port, baudrate=baudrate, printer_profile=printer_profile)
 
 	def _poweroff(self, disconnect=True):
 		self._connection_data = self._printer.get_current_connection()
 		if disconnect:
 			self._printer.disconnect()
-			
-		self._stop_idle_timer()			
+
+		self._stop_idle_timer()
 		self._set_power(False)
 
 	def _wait_for_temperature(self):
@@ -279,18 +297,19 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 	def _idle_poweroff(self):
 		if not self._settings.get_boolean(["power", "off", "idle"]):
 			return
-		
+
 		if self._settings.get_boolean(["power", "off", "temperature"]):
 			self._wait_for_temperature()
-			
+
 		if self._printer.is_printing():
 			return
-		
+
 		self._logger.info("Powering off after idle state for {}minute/s".format(self._settings.get_float(["idle", "countdown"])))
 		if self._settings.get_boolean(["power", "off", "temperature"]):
 			self._logger.info("and temperature below {}C".format(self._settings.get_float(["temperature"])))
 
 		self._poweroff()
+		self._sendMessage(self._status())
 
 	def _noclients_poweroff(self):
 		if not self._settings.get_boolean(["power", "off", "noclients"]):
@@ -298,7 +317,7 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 
 		if self._settings.get_boolean(["power", "off", "temperature"]):
 			self._wait_for_temperature()
-			
+
 		if self._printer.is_printing():
 			return
 
@@ -307,24 +326,25 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 			self._logger.info("and temperature below {}C".format(self._settings.get_float(["temperature"])))
 
 		self._poweroff()
+		self._sendMessage(self._status())
 
 	def _set_power(self, power):
 		api = self.get_api()
 		if api is None:
 			return
-		
+
 		if power:
 			self._logger.info("Enabling power supply")
 		else:
 			self._logger.info("Disabling power supply")
-			
-		api.set_power(power)	
-	
+
+		api.set_power(power)
+
 	def _get_power(self):
 		api = self.get_api()
 		if api is None:
 			return State.UNKNOWN
-		
+
 		return api.get_power()
 
 __plugin_name__ = "Automatic On/Off"
