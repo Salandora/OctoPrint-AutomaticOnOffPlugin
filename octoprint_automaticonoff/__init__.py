@@ -90,7 +90,7 @@ class AutomaticOnOffPlugin(octoprint.plugin.TemplatePlugin,
 	def get_update_information(self):
 		return dict(
 			automaticonoff=dict(
-				displayName="Automatik On/Off Plugin",
+				displayName="Automatic On/Off Plugin",
 				displayVersion=self._plugin_version,
 
 				# version check: github repository
