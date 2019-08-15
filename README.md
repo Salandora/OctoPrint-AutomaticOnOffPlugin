@@ -1,3 +1,7 @@
+# WARNING
+
+Plugin actually not in active development!
+
 # Automatic On/Off Plugin
 ---
 
